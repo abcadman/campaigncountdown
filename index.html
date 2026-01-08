@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Countdown Timer</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for a clean look - Open Sans */
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700;800&display=swap');
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f7f9fc;
+        }
+        /* Define custom colors */
+        .color-numbers {
+            color: #003865; /* Dark Blue */
+        }
+        .color-words {
+            color: #e87722; /* Orange/Rust */
+        }
+        
+        /* Outer ring container for the conic gradient */
+        .countdown-segment-outer {
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            position: relative;
+            /* Ensure the progress border is visible outside the inner content */
+            padding: 8px; /* Control the thickness of the progress bar */
+        }
+
+        /* Inner content container to create the ring effect */
+        .timer-inner {
+            background-color: white;
+            border-radius: 9999px; /* Full circle */
+            z-index: 10;
+        }
+
+        /* Set default background for segments to show the track */
+        .countdown-segment-outer {
+            background: #d1d5db; /* Light gray track */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Countdown Container -->
+    <div id="countdown-app" class="text-center w-full max-w-5xl">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-6">
+            Public Launch Countdown
+        </h1>
+        <p class="text-lg text-gray-600 mb-10">
+            <!-- Target Date Display -->
+            <span id="target-date" class="font-semibold" style="color: #e87722;"></span>
+        </p>
+
+        <!-- Display Segments -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+
+            <!-- Days Segment -->
+            <div id="days-progress" class="countdown-segment-outer rounded-full aspect-square">
+                <div class="timer-inner flex flex-col items-center justify-center h-full w-full">
+                    <div id="days" class="text-6xl sm:text-8xl font-black leading-none color-numbers">00</div>
+                    <p class="mt-2 text-sm sm:text-lg font-bold uppercase tracking-wider color-words">Days</p>
+                </div>
+            </div>
+
+            <!-- Hours Segment -->
+            <div id="hours-progress" class="countdown-segment-outer rounded-full aspect-square">
+                <div class="timer-inner flex flex-col items-center justify-center h-full w-full">
+                    <div id="hours" class="text-6xl sm:text-8xl font-black leading-none color-numbers">00</div>
+                    <p class="mt-2 text-sm sm:text-lg font-bold uppercase tracking-wider color-words">Hours</p>
+                </div>
+            </div>
+
+            <!-- Minutes Segment -->
+            <div id="minutes-progress" class="countdown-segment-outer rounded-full aspect-square">
+                <div class="timer-inner flex flex-col items-center justify-center h-full w-full">
+                    <div id="minutes" class="text-6xl sm:text-8xl font-black leading-none color-numbers">00</div>
+                    <p class="mt-2 text-sm sm:text-lg font-bold uppercase tracking-wider color-words">Minutes</p>
+                </div>
+            </div>
+
+            <!-- Seconds Segment -->
+            <div id="seconds-progress" class="countdown-segment-outer rounded-full aspect-square">
+                <div class="timer-inner flex flex-col items-center justify-center h-full w-full">
+                    <div id="seconds" class="text-6xl sm:text-8xl font-black leading-none color-numbers">00</div>
+                    <p class="mt-2 text-sm sm:text-lg font-bold uppercase tracking-wider color-words">Seconds</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Message -->
+        <div id="completion-message" class="mt-12 text-3xl font-bold" style="color: #e87722; display: none;">
+            <!-- Message will display when distance < 0 -->
+        </div>
+
+        <!-- Customization Info -->
+        <div class="mt-12 p-4 bg-indigo-50 rounded-lg text-sm text-gray-700">
+            <p class="font-semibold">Customization Note:</p>
+            <p>Edit the JavaScript variable `TARGET_DATE` in the script block below to set your own target date/time.</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration ---
+        // Final Launch Date: Nov 6, 2026, 6:00 PM EST
+        const TARGET_DATE = new Date(2026, 10, 6, 18, 0, 0).getTime(); 
+
+        // Colors for the progress ring
+        const PROGRESS_COLOR = '#e87722'; // Orange/Rust
+        const TRACK_COLOR = '#d1d5db';   // Light Gray
+
+        // Fixed duration for the Days progress bar: 364 days * 24 hours/day = 8736 hours
+        const FIXED_TOTAL_DURATION_HOURS = 364 * 24; 
+
+        // --- Utility Functions ---
+        function formatNumber(num) {
+            return num < 10 ? `0${num}` : num;
+        }
+
+        // Function to update the circular progress bar using conic-gradient
+        function updateCircleProgress(elementId, remainingValue, totalValue) {
+            const element = document.getElementById(elementId);
+            if (!element || totalValue <= 0) return;
+
+            // Calculate the percentage of time remaining (clamped between 0 and 100)
+            let percentage = (remainingValue / totalValue) * 100;
+            percentage = Math.min(Math.max(percentage, 0), 100);
+            
+            // Calculate the angle for the conic gradient
+            const angle = (percentage / 100) * 360;
+
+            // Set the background using conic gradient
+            element.style.background = `conic-gradient(${PROGRESS_COLOR} 0deg ${angle}deg, ${TRACK_COLOR} ${angle}deg 360deg)`;
+        }
+
+        function updateDisplay(days, hours, minutes, seconds, totalDistanceMs) {
+            document.getElementById('days').textContent = formatNumber(days);
+            document.getElementById('hours').textContent = formatNumber(hours);
+            document.getElementById('minutes').textContent = formatNumber(minutes);
+            document.getElementById('seconds').textContent = formatNumber(seconds);
+
+            // --- Update Circular Progress ---
+            
+            // 1. Seconds progress (out of 60)
+            updateCircleProgress('seconds-progress', seconds, 60);
+
+            // 2. Minutes progress (out of 60)
+            updateCircleProgress('minutes-progress', minutes, 60);
+
+            // 3. Hours progress (out of 24)
+            updateCircleProgress('hours-progress', hours + (minutes / 60), 24);
+
+            // 4. Days progress (Based on the fixed 364-day duration)
+            const remainingDurationHours = totalDistanceMs / (1000 * 60 * 60);
+            updateCircleProgress('days-progress', remainingDurationHours, FIXED_TOTAL_DURATION_HOURS);
+        }
+
+        function displayTargetDate() {
+            const date = new Date(TARGET_DATE);
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' };
+            document.getElementById('target-date').textContent = date.toLocaleDateString(undefined, options);
+        }
+
+        // --- Main Countdown Logic ---
+        function startCountdown() {
+            displayTargetDate();
+
+            const interval = setInterval(function() {
+                const now = new Date().getTime();
+                let distance = TARGET_DATE - now;
+
+                if (distance <= 0) {
+                    clearInterval(interval);
+                    updateDisplay(0, 0, 0, 0, 0);
+                    document.getElementById('completion-message').style.display = 'block';
+                    document.querySelectorAll('.countdown-segment-outer').forEach(el => {
+                        el.style.background = PROGRESS_COLOR;
+                    });
+                    return;
+                }
+                
+                const totalDistanceMs = distance;
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                distance %= (1000 * 60 * 60 * 24);
+                
+                const hours = Math.floor(distance / (1000 * 60 * 60));
+                distance %= (1000 * 60 * 60);
+
+                const minutes = Math.floor(distance / (1000 * 60));
+                distance %= (1000 * 60);
+
+                const seconds = Math.floor(distance / 1000);
+
+                updateDisplay(days, hours, minutes, seconds, totalDistanceMs);
+
+            }, 1000);
+        }
+
+        window.onload = startCountdown;
+    </script>
+
+</body>
+</html>
